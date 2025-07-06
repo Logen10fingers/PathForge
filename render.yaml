@@ -4,12 +4,13 @@ services:
     env: python
     rootDirectory: backend/
     buildCommand: |
+      set -x # This will print each command before execution for debugging
       pip install -r requirements.txt
       python manage.py collectstatic --noinput
       python manage.py migrate
       # --- TEMPORARY: Create superuser using a dedicated script ---
-      # This explicitly ensures the Django environment is set for the script
-      DJANGO_SETTINGS_MODULE=core.settings python create_admin_user.py
+      # Explicitly specify the path relative to the rootDirectory (backend/)
+      DJANGO_SETTINGS_MODULE=core.settings python ./create_admin_user.py
       # --- END TEMPORARY SECTION ---
     startCommand: "gunicorn core.wsgi:application"
     envVars:
