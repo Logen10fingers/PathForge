@@ -2,10 +2,21 @@ services:
   - type: web
     name: pathforge-backend
     env: python
-    buildCommand: "pip install -r requirements.txt"
+    rootDirectory: backend/ # <--- ADD THIS LINE
+    buildCommand: |
+      pip install -r requirements.txt
+      python manage.py collectstatic --noinput
+      python manage.py migrate
     startCommand: "gunicorn core.wsgi:application"
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: core.settings
       - key: PYTHON_VERSION
         value: 3.11
+      # IMPORTANT: You need a SECRET_KEY for Django in production!
+      # Add this line:
+      - key: SECRET_KEY
+        generateValue: true # Render will generate a random secure key
+      # Also recommended for DEBUG:
+      - key: DJANGO_DEBUG
+        value: "False" # Ensure DEBUG is False in production
