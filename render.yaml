@@ -7,10 +7,11 @@ services:
       pip install -r requirements.txt
       python manage.py collectstatic --noinput
       python manage.py migrate
-      # --- TEMPORARY: Create superuser on Render's database ---
-      # This command will create a superuser if one doesn't exist.
-      # Make sure to remove these lines after you successfully log in!
-      python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(username='mynewadminuser').exists() or User.objects.create_superuser('mynewadminuser', 'admin@example.com', 'MyStrongTempPassword123!')"
+      # --- TEMPORARY: Create superuser using a dedicated script ---
+      # This script will create a superuser if one doesn't exist.
+      # You can modify the default username/password directly in the create_admin_user.py file.
+      # Make sure to remove this line after you successfully log in!
+      python create_admin_user.py
       # --- END TEMPORARY SECTION ---
     startCommand: "gunicorn core.wsgi:application"
     envVars:
