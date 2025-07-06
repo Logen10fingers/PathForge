@@ -1,0 +1,323 @@
+Box,
+  Heading,
+  Text,
+  VStack,
+  Spinner,
+  Alert,
+  AlertIcon,
+  List,
+  ListItem,
+  Input,
+  Button,
+  FormControl,
+  FormLabel,
+  FormHelperText,
+  Container,
+  SimpleGrid,
+  useColorModeValue,
+  Flex,
+  Icon,
+} from '@chakra-ui/react';
+// Fix import syntax for react-icons/fa
+import { FaUser, FaStar, FaLightbulb } from 'react-icons/fa';
+=======
+
+import {
+  Box,
+  Heading,
+  Text,
+  VStack,
+  Spinner,
+  Alert,
+  AlertIcon,
+  List,
+  ListItem,
+  Input,
+  Button,
+  FormControl,
+  FormLabel,
+  FormHelperText,
+  Container,
+  SimpleGrid,
+  useColorModeValue,
+  Flex,
+  Icon,
+} from '@chakra-ui/react';
+// Fix import syntax for react-icons/fa
+import { FaUser, FaStar, FaLightbulb } from 'react-icons/fa';
+
+import SkillDistributionChart from './components/SkillDistributionChart';
+import ProfileAnalyticsChart from './components/ProfileAnalyticsChart';
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+  const [retrainError, setRetrainError] = useState(null);
+
+  // Chakra UI color mode values for dynamic styling
+  // Update background to soft pastel color for light and dark modes to reduce eye strain
+  const containerBg = useColorModeValue(
+    '#d0e8f2', // soft pastel blue for light mode
+    '#2a3b4c'  // muted dark blue for dark mode
+  );
+  // Metallic card background with subtle gradient
+  const cardBg = useColorModeValue(
+    'linear-gradient(145deg, #f0f0f0, #d9d9d9)',
+    'linear-gradient(145deg, #4a4a4a, #2a2a2a)'
+  );
+  // Metallic border color
+  const borderColor = useColorModeValue('#b0b0b0', '#5a5a5a');
+  // Metallic header color
+  const headerColor = useColorModeValue('#606060', '#a0a0a0');
+  // Metallic icon color
+  const iconColor = useColorModeValue('#707070', '#b0b0b0');
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const skillsResponse = await fetch('http://127.0.0.1:8000/api/skills/');
+        if (!skillsResponse.ok) {
+          throw new Error(`HTTP error! status: ${skillsResponse.status}`);
+        }
+        const skillsData = await skillsResponse.json();
+        setSkills(Array.isArray(skillsData) ? skillsData : []);
+
+        const profilesResponse = await fetch('http://127.0.0.1:8000/api/profiles/');
+        if (!profilesResponse.ok) {
+          throw new Error(`HTTP error! status: ${profilesResponse.status}`);
+        }
+        const profilesData = await profilesResponse.json();
+        setProfiles(Array.isArray(profilesData) ? profilesData : []);
+      } catch (e) {
+        console.error('Failed to fetch data:', e);
+        setError(e.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, []);
+
+  // Prepare data for SkillDistributionChart: aggregate skills by category with counts
+  const skillDistributionData = React.useMemo(() => {
+    const categoryCounts = {};
+    skills.forEach((skill) => {
+      const category = skill.category || 'Uncategorized';
+      categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+    });
+    return Object.entries(categoryCounts).map(([category, count]) => ({ category, count }));
+  }, [skills]);
+
+  // Prepare data for ProfileAnalyticsChart: aggregate profile skills with counts
+  const profileAnalyticsData = React.useMemo(() => {
+    const skillCounts = {};
+    profiles.forEach((profile) => {
+      if (Array.isArray(profile.skills)) {
+        profile.skills.forEach((skill) => {
+          const skillName = skill.name || 'Unknown';
+          skillCounts[skillName] = (skillCounts[skillName] || 0) + 1;
+        });
+      }
+    });
+    return Object.entries(skillCounts).map(([skill, count]) => ({ skill, count }));
+  }, [profiles]);
+=======
+  const [retrainError, setRetrainError] = useState(null);
+
+  // Chakra UI color mode values for dynamic styling
+  // Update background to soft pastel color for light and dark modes to reduce eye strain
+  const containerBg = useColorModeValue(
+    '#d0e8f2', // soft pastel blue for light mode
+    '#2a3b4c'  // muted dark blue for dark mode
+  );
+  // Metallic card background with subtle gradient
+  const cardBg = useColorModeValue(
+    'linear-gradient(145deg, #f0f0f0, #d9d9d9)',
+    'linear-gradient(145deg, #4a4a4a, #2a2a2a)'
+  );
+  // Metallic border color
+  const borderColor = useColorModeValue('#b0b0b0', '#5a5a5a');
+  // Metallic header color
+  const headerColor = useColorModeValue('#606060', '#a0a0a0');
+  // Metallic icon color
+  const iconColor = useColorModeValue('#707070', '#b0b0b0');
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const skillsResponse = await fetch('http://127.0.0.1:8000/api/skills/');
+        if (!skillsResponse.ok) {
+          throw new Error(`HTTP error! status: ${skillsResponse.status}`);
+        }
+        const skillsData = await skillsResponse.json();
+        setSkills(Array.isArray(skillsData) ? skillsData : []);
+
+        const profilesResponse = await fetch('http://127.0.0.1:8000/api/profiles/');
+        if (!profilesResponse.ok) {
+          throw new Error(`HTTP error! status: ${profilesResponse.status}`);
+        }
+        const profilesData = await profilesResponse.json();
+        setProfiles(Array.isArray(profilesData) ? profilesData : []);
+      } catch (e) {
+        console.error('Failed to fetch data:', e);
+        setError(e.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, []);
+
+  const skillDistributionData = React.useMemo(() => {
+    const categoryCounts = {};
+    skills.forEach((skill) => {
+      const category = skill.category || 'Uncategorized';
+      categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+    });
+    return Object.entries(categoryCounts).map(([category, count]) => ({ category, count }));
+  }, [skills]);
+
+  const profileAnalyticsData = React.useMemo(() => {
+    const skillCounts = {};
+    profiles.forEach((profile) => {
+      if (Array.isArray(profile.skills)) {
+        profile.skills.forEach((skill) => {
+          const skillName = skill.name || 'Unknown';
+          skillCounts[skillName] = (skillCounts[skillName] || 0) + 1;
+        });
+      }
+    });
+    return Object.entries(skillCounts).map(([skill, count]) => ({ skill, count }));
+  }, [profiles]);
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+          <Flex align="center" mb={4}>
+            <Icon as={FaStar} boxSize={6} color={iconColor} mr={2} />
+            <Heading as="h2" size="lg" color={headerColor}>
+              Skills
+            </Heading>
+          </Flex>
+          {!Array.isArray(skills) || skills.length === 0 ? (
+            <Box
+              p={4}
+              borderWidth="1px"
+              borderRadius="md"
+              bg="gray.100"
+              borderColor={borderColor}
+              boxShadow="inner"
+              textAlign="center"
+              color={headerColor}
+              fontWeight="semibold"
+              fontSize="md"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+              gap={2}
+            >
+              <Icon as={FaStar} boxSize={5} color={iconColor} />
+              No skills found. Add some in Django admin.
+            </Box>
+          ) : (
+            <VStack align="stretch" spacing={3}>
+              {skills.map((skill) => (
+                <Box
+                  key={skill.id}
+                  p={3}
+                  borderWidth="1px"
+                  borderRadius="md"
+                  _hover={{ bg: 'teal.50', borderColor: 'teal.400' }}
+                  transition="all 0.2s ease-in-out"
+                  boxShadow="md"
+                >
+                  <Text fontWeight="bold" fontSize="lg" color={headerColor}>
+                    {skill.name}
+                  </Text>
+                  <Text fontSize="sm" color="gray.600">
+                    {skill.description}
+                  </Text>
+                  <Text fontSize="xs" color="gray.500">
+                    Category: {skill.category || 'N/A'}
+                  </Text>
+                </Box>
+              ))}
+            </VStack>
+          )}
+        </Box>
+
+        {/* Profiles Section */}
+        <Box p={6} bg={cardBg} borderRadius="lg" shadow="lg" border="1px" borderColor={borderColor} transition="all 0.3s ease">
+          <Flex align="center" mb={4}>
+            <Icon as={FaUser} boxSize={6} color={iconColor} mr={2} />
+            <Heading as="h2" size="lg" color={headerColor}>
+              Profiles
+            </Heading>
+          </Flex>
+          {!Array.isArray(profiles) || profiles.length === 0 ? (
+            <Box
+              p={4}
+              borderWidth="1px"
+              borderRadius="md"
+              bg="gray.100"
+              borderColor={borderColor}
+              boxShadow="inner"
+              textAlign="center"
+              color={headerColor}
+              fontWeight="semibold"
+              fontSize="md"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+              gap={2}
+            >
+              <Icon as={FaUser} boxSize={5} color={iconColor} />
+              No profiles found. Add some in Django admin.
+            </Box>
+          ) : (
+            <VStack align="stretch" spacing={3}>
+              {profiles.map((profile) => (
+                <Box
+                  key={profile.id}
+                  p={3}
+                  borderWidth="1px"
+                  borderRadius="md"
+                  _hover={{ bg: 'teal.50', borderColor: 'teal.400' }}
+                  transition="all 0.2s ease-in-out"
+                  boxShadow="md"
+                >
+                  <Text fontWeight="bold" fontSize="lg" color={headerColor}>
+                    {profile.name}
+                  </Text>
+                  <Text fontSize="sm" color="gray.600">
+                    {profile.title}
+                  </Text>
+                  <Text fontSize="xs" color="gray.500">
+                    Skills: {profile.skills ? profile.skills.map((s) => s.name).join(', ') : 'None'}
+                  </Text>
+                  {/* Display skill names */}
+                </Box>
+              ))}
+            </VStack>
+          )}
+        </Box>
+=======
+          <Flex align="center" mb={4}>
+            <Icon as={FaStar} boxSize={6} color={iconColor} mr={2} />
+            <Heading as="h2" size="lg" color={headerColor}>
+              Skills
+            </Heading>
+          </Flex>
+          <SkillDistributionChart data={skillDistributionData} />
+        </Box>
+
+        {/* Profiles Section */}
+        <Box p={6} bg={cardBg} borderRadius="lg" shadow="lg" border="1px" borderColor={borderColor} transition="all 0.3s ease">
+          <Flex align="center" mb={4}>
+            <Icon as={FaUser} boxSize={6} color={iconColor} mr={2} />
+            <Heading as="h2" size="lg" color={headerColor}>
+              Profiles
+            </Heading>
+          </Flex>
+          <ProfileAnalyticsChart data={profileAnalyticsData} />
+        </Box>

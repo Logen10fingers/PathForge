@@ -1,0 +1,4 @@
+name,description,category,aliases,source
+Python,A general-purpose language,Development,"Py,Python3",bulk_import
+Django,Web framework for Python,Development,"Django Framework,Python Web",bulk_import
+React,Frontend JavaScript library,Frontend,"ReactJS,React.js",bulk_import
