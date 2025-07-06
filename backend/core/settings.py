@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os # Import os module to access environment variables
+import dj_database_url # Import dj_database_url for production database setup
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,12 +22,26 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-!!&($^yeg^6f0icne3x$8x^n@yy+ch+um8ui^3$^mjzp)nm=%q"
+# It's recommended to load SECRET_KEY from an environment variable in production
+SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-!!&($^yeg^6f0icne3x$8x^n@yy+ch+um8ui^3$^mjzp)nm=%q")
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Set DEBUG based on environment variable, default to True for local development
+DEBUG = os.environ.get("DEBUG", "True").lower() == "true"
 
+
+# ALLOWED_HOSTS for Render deployment
 ALLOWED_HOSTS = []
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+# Also add the general .onrender.com wildcard for flexibility
+ALLOWED_HOSTS.append('.onrender.com')
+# Add localhost for local development
+ALLOWED_HOSTS.append('127.0.0.1')
+ALLOWED_HOSTS.append('localhost')
 
 
 # Application definition
@@ -56,6 +72,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware", # Add WhiteNoise for serving static files in production
 ]
 
 ROOT_URLCONF = "core.urls"
@@ -81,12 +98,18 @@ WSGI_APPLICATION = "core.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# Default to SQLite for local development
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
     }
 }
+
+# Use PostgreSQL on Render by parsing the DATABASE_URL environment variable
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if DATABASE_URL:
+    DATABASES['default'] = dj_database_url.parse(DATABASE_URL)
 
 
 # Password validation
@@ -123,7 +146,13 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
+# Ensure static files are collected into a 'staticfiles' directory at the root of the project
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Tell WhiteNoise to compress static files
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -131,10 +160,17 @@ STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # CORS Settings (for development with React)
-CORS_ALLOW_ALL_ORIGINS = (
-    True  # WARNING: This is INSECURE for production. Remove or restrict later.
-)
-# Or, if you prefer more explicit during development (React typically runs on 3000):
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:3000",
-# ]
+CORS_ALLOW_ALL_ORIGINS = DEBUG  # Allow all origins only when DEBUG is True
+# If DEBUG is False (i.e., in production), you should restrict this more:
+CORS_ALLOWED_ORIGINS = [
+    # Add your frontend URL here when it's deployed
+    # e.g., "https://your-frontend-app.onrender.com",
+]
+
+# Add specific ALLOWED_HOST for Render's health checks and your application
+# This is usually managed by the RENDER_EXTERNAL_HOSTNAME environment variable
+# and the wildcard for .onrender.com, which is handled above in ALLOWED_HOSTS.
+
+# Configure Django to trust the X-Forwarded-Proto header, which Render sets for HTTPS
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
