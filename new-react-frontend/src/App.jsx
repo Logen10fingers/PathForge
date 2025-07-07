@@ -19,6 +19,7 @@ import {
   useColorModeValue,
   Flex,
   Icon,
+  Select, // Added Select for filtering
 } from '@chakra-ui/react';
 import { FaUser, FaStar, FaLightbulb } from 'react-icons/fa';
 import DataImport from './components/DataImport';
@@ -33,6 +34,11 @@ function App() {
   const [suggestedCategory, setSuggestedCategory] = useState(null);
   const [suggestionLoading, setSuggestionLoading] = useState(false);
   const [suggestionError, setSuggestionError] = useState(null);
+
+  // State variables for filtering
+  const [skillSearch, setSkillSearch] = useState('');
+  const [profileSearch, setProfileSearch] = useState('');
+  const [skillCategoryFilter, setSkillCategoryFilter] = useState('');
 
   const containerBg = useColorModeValue('#f9fafb', '#1a202c');
   const cardBg = useColorModeValue('white', 'gray.700');
@@ -82,6 +88,20 @@ function App() {
     }
   };
 
+  // Filtering logic
+  const filteredSkills = skills.filter(skill => {
+    const matchesSearch = skill.name.toLowerCase().includes(skillSearch.toLowerCase());
+    const matchesCategory = skillCategoryFilter ? skill.category === skillCategoryFilter : true;
+    return matchesSearch && matchesCategory;
+  });
+
+  const filteredProfiles = profiles.filter(profile => {
+    // Assuming 'profile.user.username' exists as per the filtering requirement
+    // You might need to adjust this based on your actual profile data structure.
+    // For example, if profiles only have a 'name' field, use profile.name.toLowerCase()
+    return profile.user.username.toLowerCase().includes(profileSearch.toLowerCase());
+  });
+
   if (loading) {
     return (
       <Container centerContent height="100vh" display="flex" flexDirection="column" justifyContent="center">
@@ -120,15 +140,33 @@ function App() {
             shadow="md"
             border="1px"
             borderColor={borderColor}
-            transition="all 0.3s ease-in-out" // Added ease-in-out for smoother transition
-            _hover={{ shadow: 'lg', transform: 'scale(1.01)' }} // Added hover effect
+            transition="all 0.3s ease-in-out"
+            _hover={{ shadow: 'lg', transform: 'scale(1.01)' }}
           >
             <Heading as="h2" size="lg" mb={4} color={headerColor}>Skills</Heading>
-            {!Array.isArray(skills) || skills.length === 0 ? (
-              <Text>No skills found. Add some in Django admin.</Text>
+            <Input
+              placeholder="Search skills..."
+              value={skillSearch}
+              onChange={(e) => setSkillSearch(e.target.value)}
+              mb={4}
+            />
+            <Select
+              placeholder="Filter by category"
+              value={skillCategoryFilter}
+              onChange={(e) => setSkillCategoryFilter(e.target.value)}
+              mb={4}
+            >
+              <option value="Development">Development</option>
+              <option value="Frontend">Frontend</option>
+              <option value="Web">Web</option>
+              <option value="Database">Database</option>
+              {/* Add more categories as needed, or dynamically populate from skills data */}
+            </Select>
+            {!Array.isArray(filteredSkills) || filteredSkills.length === 0 ? (
+              <Text>No skills found matching your criteria. Add some in Django admin or adjust filters.</Text>
             ) : (
               <List spacing={3}>
-                {skills.map((skill) => (
+                {filteredSkills.map((skill) => (
                   <ListItem key={skill.id}>
                     <Text as="span" fontWeight="bold">{skill.name}</Text> - {skill.description} (Category: {skill.category || 'N/A'})
                   </ListItem>
@@ -145,14 +183,20 @@ function App() {
             shadow="md"
             border="1px"
             borderColor={borderColor}
-            transition="all 0.3s ease-in-out" // Added ease-in-out for smoother transition
-            _hover={{ shadow: 'lg', transform: 'scale(1.01)' }} // Added hover effect
+            transition="all 0.3s ease-in-out"
+            _hover={{ shadow: 'lg', transform: 'scale(1.01)' }}
           >
             <Heading as="h2" size="lg" mb={4} color={headerColor}>Profiles</Heading>
-            {!Array.isArray(profiles) || profiles.length === 0 ? (
-              <Text>No profiles found. Add some in Django admin.</Text>
+            <Input
+              placeholder="Search profiles..."
+              value={profileSearch}
+              onChange={(e) => setProfileSearch(e.target.value)}
+              mb={4}
+            />
+            {!Array.isArray(filteredProfiles) || filteredProfiles.length === 0 ? (
+              <Text>No profiles found matching your criteria. Add some in Django admin or adjust filters.</Text>
             ) : (
-              <Text>You have {profiles.length} profiles managed.</Text>
+              <Text>You have {filteredProfiles.length} profiles managed.</Text>
             )}
           </Box>
 
@@ -164,8 +208,8 @@ function App() {
             shadow="md"
             border="1px"
             borderColor={borderColor}
-            transition="all 0.3s ease-in-out" // Added ease-in-out for smoother transition
-            _hover={{ shadow: 'lg', transform: 'scale(1.01)' }} // Added hover effect
+            transition="all 0.3s ease-in-out"
+            _hover={{ shadow: 'lg', transform: 'scale(1.01)' }}
           >
             <Heading as="h2" size="lg" mb={4} color={headerColor}>Suggest Skill Category (AI Powered)</Heading>
             <FormControl id="skill-suggestion">
@@ -200,8 +244,8 @@ function App() {
             shadow="md"
             border="1px"
             borderColor={borderColor}
-            transition="all 0.3s ease-in-out" // Added ease-in-out for smoother transition
-            _hover={{ shadow: 'lg', transform: 'scale(1.01)' }} // Added hover effect
+            transition="all 0.3s ease-in-out"
+            _hover={{ shadow: 'lg', transform: 'scale(1.01)' }}
           >
             <Heading as="h2" size="lg" mb={4} color={headerColor}>Import Data File</Heading>
             <DataImport />
