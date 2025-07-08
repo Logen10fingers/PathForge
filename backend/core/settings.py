@@ -66,6 +66,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # Add WhiteNoise for serving static files in production
     "corsheaders.middleware.CorsMiddleware",  # Add this line
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -73,7 +74,6 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware", # Add WhiteNoise for serving static files in production
 ]
 
 ROOT_URLCONF = "core.urls"
@@ -153,6 +153,13 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Tell WhiteNoise to compress static files
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+# Additional settings to serve static files correctly on Render
+if os.environ.get('RENDER') == 'true':
+    DEBUG = False
+    ALLOWED_HOSTS = ['*']
+    # Enable WhiteNoise static file serving
+    MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
 
 
 # Default primary key field type
