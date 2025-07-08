@@ -155,10 +155,6 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # Tell WhiteNoise to compress static files
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-# Removed the problematic 'if os.environ.get('RENDER') == 'true':' block
-# Its functionality is either redundant or less secure than existing settings.
-# DEBUG, ALLOWED_HOSTS, and WhiteNoise middleware are already handled above.
-
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
