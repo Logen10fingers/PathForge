@@ -11,8 +11,9 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
-import os # Import os module to access environment variables
-import dj_database_url # Import dj_database_url for production database setup
+import os  # Import os module to access environment variables
+import dj_database_url  # Import dj_database_url for production database setup
+import json  # Added for parsing CORS_ALLOWED_ORIGINS from JSON string
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -154,12 +155,9 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # Tell WhiteNoise to compress static files
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-# Additional settings to serve static files correctly on Render
-if os.environ.get('RENDER') == 'true':
-    DEBUG = False
-    ALLOWED_HOSTS = ['*']
-    # Enable WhiteNoise static file serving
-    MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
+# Removed the problematic 'if os.environ.get('RENDER') == 'true':' block
+# Its functionality is either redundant or less secure than existing settings.
+# DEBUG, ALLOWED_HOSTS, and WhiteNoise middleware are already handled above.
 
 
 # Default primary key field type
@@ -167,17 +165,20 @@ if os.environ.get('RENDER') == 'true':
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# CORS Settings (for development with React)
+# CORS Settings
 CORS_ALLOW_ALL_ORIGINS = DEBUG  # Allow all origins only when DEBUG is True
-# If DEBUG is False (i.e., in production), you should restrict this more:
-CORS_ALLOWED_ORIGINS = [
-    # Add your frontend URL here when it's deployed
-    # e.g., "https://your-frontend-app.onrender.com",
-]
 
-# Add specific ALLOWED_HOST for Render's health checks and your application
-# This is usually managed by the RENDER_EXTERNAL_HOSTNAME environment variable
-# and the wildcard for .onrender.com, which is handled above in ALLOWED_HOSTS.
+CORS_ALLOWED_ORIGINS = []
+cors_origins_env = os.environ.get('CORS_ALLOWED_ORIGINS')
+if cors_origins_env:
+    try:
+        # Attempt to parse as JSON array (e.g., '["https://your-frontend.onrender.com"]')
+        CORS_ALLOWED_ORIGINS = json.loads(cors_origins_env)
+    except json.JSONDecodeError:
+        # Fallback to comma-separated if it's not a valid JSON array string
+        # This might happen if the env var was set as "url1,url2" instead of '["url1", "url2"]'
+        CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins_env.split(',')]
+
 
 # Configure Django to trust the X-Forwarded-Proto header, which Render sets for HTTPS
 if not DEBUG:
