@@ -19,9 +19,11 @@ import {
   useColorModeValue,
   Flex,
   Icon,
-  Select, // Added Select for filtering
+  Select,
 } from '@chakra-ui/react';
 import { FaUser, FaStar, FaLightbulb } from 'react-icons/fa';
+// Import Link for routing
+import { Link } from 'react-router-dom';
 import DataImport from './components/DataImport';
 
 function App() {
@@ -96,10 +98,9 @@ function App() {
   });
 
   const filteredProfiles = profiles.filter(profile => {
-    // Assuming 'profile.user.username' exists as per the filtering requirement
-    // You might need to adjust this based on your actual profile data structure.
-    // For example, if profiles only have a 'name' field, use profile.name.toLowerCase()
-    return profile.user.username.toLowerCase().includes(profileSearch.toLowerCase());
+    // Check if profile.user and profile.user.username exist before accessing
+    const username = profile.user && profile.user.username ? profile.user.username : '';
+    return username.toLowerCase().includes(profileSearch.toLowerCase());
   });
 
   if (loading) {
@@ -168,7 +169,13 @@ function App() {
               <List spacing={3}>
                 {filteredSkills.map((skill) => (
                   <ListItem key={skill.id}>
-                    <Text as="span" fontWeight="bold">{skill.name}</Text> - {skill.description} (Category: {skill.category || 'N/A'})
+                    {/* Link for Skill Detail View */}
+                    <Link to={`/skills/${skill.id}`}>
+                      <Text as="span" fontWeight="bold" color="teal.500" _hover={{ textDecoration: 'underline' }}>
+                        {skill.name}
+                      </Text>
+                    </Link>
+                    {' '} - {skill.description} (Category: {skill.category || 'N/A'})
                   </ListItem>
                 ))}
               </List>
@@ -196,7 +203,20 @@ function App() {
             {!Array.isArray(filteredProfiles) || filteredProfiles.length === 0 ? (
               <Text>No profiles found matching your criteria. Add some in Django admin or adjust filters.</Text>
             ) : (
-              <Text>You have {filteredProfiles.length} profiles managed.</Text>
+              <List spacing={3}>
+                {filteredProfiles.map((profile) => (
+                  <ListItem key={profile.id} p={2} shadow="sm" borderWidth="1px" borderRadius="md">
+                    {/* Link for Profile Detail View */}
+                    <Link to={`/profiles/${profile.id}`}>
+                      <Heading fontSize="md" color="blue.500" _hover={{ textDecoration: 'underline' }}>
+                        {profile.user ? profile.user.username : 'N/A User'}
+                      </Heading>
+                    </Link>
+                    <Text fontSize="sm">Bio: {profile.bio || 'N/A'}</Text>
+                    {/* Removed 'Title' as it's not consistently in data, using bio instead */}
+                  </ListItem>
+                ))}
+              </List>
             )}
           </Box>
 

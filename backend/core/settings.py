@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     "ai_skills",
     "job_roles",
     "importer",
+    "django_filters"
 ]
 
 MIDDLEWARE = [
@@ -174,3 +175,8 @@ CORS_ALLOWED_ORIGINS = [
 # Configure Django to trust the X-Forwarded-Proto header, which Render sets for HTTPS
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Django REST Framework settings
+REST_FRAMEWORK = {
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
+}
