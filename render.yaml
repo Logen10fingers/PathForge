@@ -5,7 +5,7 @@ services:
     buildCommand: |
       set -x # This will print each command before execution for debugging
       pip install -r requirements.txt
-    startCommand: "gunicorn core.wsgi:application"
+    startCommand: "gunicorn core.wsgi:application --bind 0.0.0.0:$PORT"
     preDeployCommand: python manage.py collectstatic --noinput
     envVars:
       - key: DJANGO_SETTINGS_MODULE

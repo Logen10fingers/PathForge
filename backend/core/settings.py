@@ -11,9 +11,10 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
-import os  # Import os module to access environment variables
-import dj_database_url  # Import dj_database_url for production database setup
-import json  # Added for parsing CORS_ALLOWED_ORIGINS from JSON string
+import os
+import dj_database_url
+import json # Keep this for JSON parsing of CORS origins
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,7 +24,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# It's recommended to load SECRET_KEY from an environment variable in production
 SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-!!&($^yeg^6f0icne3x$8x^n@yy+ch+um8ui^3$^mjzp)nm=%q")
 
 
@@ -34,19 +34,27 @@ DEBUG = os.environ.get("DEBUG", "True").lower() == "true"
 
 # ALLOWED_HOSTS for Render deployment
 ALLOWED_HOSTS = []
-RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 
-if RENDER_EXTERNAL_HOSTNAME:
-    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
-# Also add the general .onrender.com wildcard for flexibility
-ALLOWED_HOSTS.append('.onrender.com')
-# Add localhost for local development
-ALLOWED_HOSTS.append('127.0.0.1')
-ALLOWED_HOSTS.append('localhost')
+# When DEBUG is False, you MUST specify ALLOWED_HOSTS.
+# Render automatically sets RENDER_EXTERNAL_HOSTNAME.
+# For local development, 'localhost' and '127.0.0.1' are needed.
+if DEBUG:
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+else:
+    # Production settings
+    RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+    if RENDER_EXTERNAL_HOSTNAME:
+        ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+    # Add localhost for local testing even in production if needed, but not recommended for public facing
+    # ALLOWED_HOSTS.append('localhost')
+    # ALLOWED_HOSTS.append('127.0.0.1')
+    # It's better to explicitly list your frontend deployment URL if you're not using RENDER_EXTERNAL_HOSTNAME for backend.
+    # For a backend, RENDER_EXTERNAL_HOSTNAME is usually sufficient.
+    # However, if your frontend is on Render at a custom domain, you might need to add it here as well
+    # if it's making requests *to this backend*.
 
 
 # Application definition
-
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -57,6 +65,7 @@ INSTALLED_APPS = [
     # My Apps & Third-Party Apps
     "rest_framework",
     "corsheaders",
+    "rest_framework.authtoken", # Make sure this is always here if using TokenAuthentication
     "skills",
     "profiles",
     "ai_skills",
@@ -67,8 +76,10 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",  # Add WhiteNoise for serving static files in production
-    "corsheaders.middleware.CorsMiddleware",  # Add this line
+    # WhiteNoise should be after SecurityMiddleware for proper header handling
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    # CorsMiddleware should be as high as possible, definitely before CommonMiddleware
+    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -86,6 +97,7 @@ TEMPLATES = [
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
+                "django.template.context_processors.debug", # Good to have, handles DEBUG mode specifics
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
@@ -98,9 +110,6 @@ WSGI_APPLICATION = "core.wsgi.application"
 
 
 # Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
-# Default to SQLite for local development
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
@@ -115,8 +124,6 @@ if DATABASE_URL:
 
 
 # Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
@@ -134,53 +141,75 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 # Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
-
 LANGUAGE_CODE = "en-us"
-
 TIME_ZONE = "UTC"
-
 USE_I18N = True
-
 USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
-
 STATIC_URL = "/static/"
-# Ensure static files are collected into a 'staticfiles' directory at the root of the project
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# Tell WhiteNoise to compress static files
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+# Use WhiteNoise to serve static files in production
+if not DEBUG:
+    STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+else:
+    # In development, Django's staticfiles app handles it
+    pass
 
 
 # Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+
 # CORS Settings
-CORS_ALLOW_ALL_ORIGINS = DEBUG  # Allow all origins only when DEBUG is True
+# CORS_ALLOW_ALL_ORIGINS = True # Only for local dev or public APIs, generally not recommended for prod
+CORS_ALLOW_ALL_ORIGINS = DEBUG # This is fine for development, but in production, use CORS_ALLOWED_ORIGINS
 
 CORS_ALLOWED_ORIGINS = []
 cors_origins_env = os.environ.get('CORS_ALLOWED_ORIGINS')
+
 if cors_origins_env:
     try:
-        # Attempt to parse as JSON array (e.g., '["https://your-frontend.onrender.com"]')
+        # Attempt to parse as JSON array (e.g., '["https://your-frontend.onrender.com", "http://localhost:5173"]')
+        # This is the most robust way if you need multiple origins from an env var.
         CORS_ALLOWED_ORIGINS = json.loads(cors_origins_env)
     except json.JSONDecodeError:
         # Fallback to comma-separated if it's not a valid JSON array string
-        # This might happen if the env var was set as "url1,url2" instead of '["url1", "url2"]'
-        CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins_env.split(',')]
+        # This handles cases where env var is "url1,url2"
+        CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins_env.split(',') if origin.strip()]
+
+# Add localhost for local frontend development if not already in env var
+if DEBUG and 'http://localhost:5173' not in CORS_ALLOWED_ORIGINS:
+    CORS_ALLOWED_ORIGINS.append('http://localhost:5173')
+# Add your deployed frontend URL if it's not the same as RENDER_EXTERNAL_HOSTNAME (e.g. if you have a separate frontend on Render)
+# Example:
+# if not DEBUG and 'https://pathforge-frontend.onrender.com' not in CORS_ALLOWED_ORIGINS:
+#     CORS_ALLOWED_ORIGINS.append('https://pathforge-frontend.onrender.com')
 
 
 # Configure Django to trust the X-Forwarded-Proto header, which Render sets for HTTPS
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    # You might also want to set these for production:
+    # SECURE_SSL_REDIRECT = True # Redirects HTTP to HTTPS
+    # SESSION_COOKIE_SECURE = True # Ensures cookies are only sent over HTTPS
+    # CSRF_COOKIE_SECURE = True # Ensures CSRF cookies are only sent over HTTPS
+    # SECURE_HSTS_SECONDS = 31536000 # HSTS: Protects against SSL stripping attacks
+    # SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    # SECURE_HSTS_PRELOAD = True
+    # SECURE_BROWSER_XSS_FILTER = True
+    # X_FRAME_OPTIONS = 'DENY' # Already set by middleware, but good to know
 
 # Django REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication', # Optional, for browsable API
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated', # Require authentication for all views by default
+    ],
 }
