@@ -2,162 +2,151 @@
 
 import axios from 'axios';
 
-// *** IMPORTANT: Set this to your ACTUAL Django backend URL ***
-// Based on previous screenshots, your Render backend is 'pathforge-backend.onrender.com'
-export const API_BASE_URL = 'https://pathforge-backend.onrender.com/api'; 
-// If you are running Django locally, use: 'http://127.0.0.1:8000/api';
+const API_BASE_URL = 'http://127.0.0.1:8000'; // Make sure this matches your Django backend URL
 
-// --- Authentication ---
+const api = axios.create({
+    baseURL: API_BASE_URL,
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
+
+// Interceptor to attach the token to outgoing requests
+api.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('authToken');
+        if (token) {
+            config.headers.Authorization = `Token ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
+
+// Interceptor for response handling (e.g., unauthorized errors)
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response && error.response.status === 401) {
+            console.error("Unauthorized request. Token might be expired or invalid.");
+            // Optional: You could redirect to login page here, but typically handled by useAuth hook or similar.
+            // For example: window.location.href = '/login';
+        }
+        return Promise.reject(error);
+    }
+);
+
 export const loginUser = async (username, password) => {
-  try {
-    const response = await axios.post(`${API_BASE_URL}/token/`, { username, password });
-    return response.data;
-  } catch (error) {
-    console.error("Login failed:", error.response?.data || error.message);
-    throw error;
-  }
+    try {
+        const response = await api.post('/api/token/login/', { username, password });
+        return response.data;
+    } catch (error) {
+        console.error('Login API error:', error.response ? error.response.data : error.message);
+        throw error;
+    }
 };
 
-// --- Profiles ---
-export const getProfiles = async (authToken) => {
-  try {
-    const response = await axios.get(`${API_BASE_URL}/profiles/`, {
-      headers: {
-        Authorization: `Bearer ${authToken}`,
-      },
-    });
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching profiles:", error.response?.data || error.message);
-    throw error;
-  }
+// Profile related API calls
+export const fetchProfiles = async () => { // Exported as fetchProfiles
+    try {
+        const response = await api.get('/api/profiles/');
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching profiles:', error.response ? error.response.data : error.message);
+        throw error;
+    }
 };
 
-export const getProfileById = async (id, authToken) => {
-  try {
-    const response = await axios.get(`${API_BASE_URL}/profiles/${id}/`, {
-      headers: {
-        Authorization: `Bearer ${authToken}`,
-      },
-    });
-    return response.data;
-  } catch (error) {
-    console.error(`Error fetching profile ${id}:`, error.response?.data || error.message);
-    throw error;
-  }
+export const fetchProfileById = async (id) => {
+    try {
+        const response = await api.get(`/api/profiles/${id}/`);
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching profile with ID ${id}:`, error.response ? error.response.data : error.message);
+        throw error;
+    }
 };
 
-export const createProfile = async (profileData, authToken) => {
-  try {
-    const response = await axios.post(`${API_BASE_URL}/profiles/`, profileData, {
-      headers: {
-        Authorization: `Bearer ${authToken}`,
-        'Content-Type': 'application/json',
-      },
-    });
-    return response.data;
-  } catch (error) {
-    console.error("Error creating profile:", error.response?.data || error.message);
-    throw error;
-  }
+export const createProfile = async (profileData) => { // Exported as createProfile
+    try {
+        const response = await api.post('/api/profiles/', profileData);
+        return response.data;
+    } catch (error) {
+        console.error('Error creating profile:', error.response ? error.response.data : error.message);
+        throw error;
+    }
 };
 
-export const updateProfile = async (id, profileData, authToken) => {
-  try {
-    const response = await axios.put(`${API_BASE_URL}/profiles/${id}/`, profileData, {
-      headers: {
-        Authorization: `Bearer ${authToken}`,
-        'Content-Type': 'application/json',
-      },
-    });
-    return response.data;
-  } catch (error) {
-    console.error(`Error updating profile ${id}:`, error.response?.data || error.message);
-    throw error;
-  }
+export const updateProfile = async (id, profileData) => {
+    try {
+        const response = await api.put(`/api/profiles/${id}/`, profileData);
+        return response.data;
+    } catch (error) {
+        console.error(`Error updating profile with ID ${id}:`, error.response ? error.response.data : error.message);
+        throw error;
+    }
 };
 
-export const deleteProfile = async (id, authToken) => {
-  try {
-    await axios.delete(`${API_BASE_URL}/profiles/${id}/`, {
-      headers: {
-        Authorization: `Bearer ${authToken}`,
-      },
-    });
-  } catch (error) {
-    console.error(`Error deleting profile ${id}:`, error.response?.data || error.message);
-    throw error;
-  }
+export const deleteProfile = async (id) => {
+    try {
+        const response = await api.delete(`/api/profiles/${id}/`);
+        return response.data;
+    } catch (error) {
+        console.error(`Error deleting profile with ID ${id}:`, error.response ? error.response.data : error.message);
+        throw error;
+    }
 };
 
-// --- Skills ---
-export const getSkills = async (authToken) => {
-  try {
-    const response = await axios.get(`${API_BASE_URL}/skills/`, {
-      headers: {
-        Authorization: `Bearer ${authToken}`,
-      },
-    });
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching skills:", error.response?.data || error.message);
-    throw error;
-  }
+
+// Skill related API calls
+export const fetchSkills = async () => { // Exported as fetchSkills
+    try {
+        const response = await api.get('/api/skills/');
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching skills:', error.response ? error.response.data : error.message);
+        throw error;
+    }
 };
 
-export const getSkillById = async (id, authToken) => {
-  try {
-    const response = await axios.get(`${API_BASE_URL}/skills/${id}/`, {
-      headers: {
-        Authorization: `Bearer ${authToken}`,
-      },
-    });
-    return response.data;
-  } catch (error) {
-    console.error(`Error fetching skill ${id}:`, error.response?.data || error.message);
-    throw error;
-  }
+export const fetchSkillById = async (id) => {
+    try {
+        const response = await api.get(`/api/skills/${id}/`);
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching skill with ID ${id}:`, error.response ? error.response.data : error.message);
+        throw error;
+    }
 };
 
-export const createSkill = async (skillData, authToken) => {
-  try {
-    const response = await axios.post(`${API_BASE_URL}/skills/`, skillData, {
-      headers: {
-        Authorization: `Bearer ${authToken}`,
-        'Content-Type': 'application/json',
-      },
-    });
-    return response.data;
-  } catch (error) {
-    console.error("Error creating skill:", error.response?.data || error.message);
-    throw error;
-  }
+export const createSkill = async (skillData) => { // Exported as createSkill
+    try {
+        const response = await api.post('/api/skills/', skillData);
+        return response.data;
+    } catch (error) {
+        console.error('Error creating skill:', error.response ? error.response.data : error.message);
+        throw error;
+    }
 };
 
-export const updateSkill = async (id, skillData, authToken) => {
-  try {
-    const response = await axios.put(`${API_BASE_URL}/skills/${id}/`, skillData, {
-      headers: {
-        Authorization: `Bearer ${authToken}`,
-        'Content-Type': 'application/json',
-      },
-    });
-    return response.data;
-  } catch (error) {
-    console.error(`Error updating skill ${id}:`, error.response?.data || error.message);
-    throw error;
-  }
+export const updateSkill = async (id, skillData) => {
+    try {
+        const response = await api.put(`/api/skills/${id}/`, skillData);
+        return response.data;
+    } catch (error) {
+        console.error(`Error updating skill with ID ${id}:`, error.response ? error.response.data : error.message);
+        throw error;
+    }
 };
 
-export const deleteSkill = async (id, authToken) => {
-  try {
-    await axios.delete(`${API_BASE_URL}/skills/${id}/`, {
-      headers: {
-        Authorization: `Bearer ${authToken}`,
-      },
-    });
-  } catch (error) {
-    console.error(`Error deleting skill ${id}:`, error.response?.data || error.message);
-    throw error;
-  }
+export const deleteSkill = async (id) => { // Exported as deleteSkill
+    try {
+        const response = await api.delete(`/api/skills/${id}/`);
+        return response.data;
+    } catch (error) {
+        console.error(`Error deleting skill with ID ${id}:`, error.response ? error.response.data : error.message);
+        throw error;
+    }
 };

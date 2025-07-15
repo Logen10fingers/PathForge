@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Box, Heading, Text, Spinner } from '@chakra-ui/react';
+import { fetchSkillById } from '../api/api';
 
 const SkillDetail = () => {
   const { id } = useParams();
@@ -11,17 +12,7 @@ const SkillDetail = () => {
   const [error, setError] = useState(null); // Add error state
 
   useEffect(() => {
-    // Explicitly use the Django backend URL for the API call
-    const apiUrl = `http://localhost:8000/api/skills/${id}/`;
-
-    fetch(apiUrl)
-      .then((res) => {
-        if (!res.ok) {
-          // If response is not OK (e.g., 404, 500), throw an error
-          throw new Error(`HTTP error! Status: ${res.status}`);
-        }
-        return res.json();
-      })
+    fetchSkillById(id)
       .then((data) => {
         console.log("Fetched skill:", data); // Log fetched data for debugging
         setSkill(data);
@@ -66,8 +57,8 @@ const SkillDetail = () => {
       <Text><strong>Category:</strong> {skill.category || 'N/A'}</Text>
       <Text><strong>Description:</strong> {skill.description || 'N/A'}</Text>
       <Text><strong>Source:</strong> {skill.source || 'N/A'}</Text>
-      {/* Assuming aliases might be an array, display them */}
-      {skill.aliases && skill.aliases.length > 0 && (
+      {/* Assuming aliases might be an array, display them */} 
+      {skill.aliases && Array.isArray(skill.aliases) && skill.aliases.length > 0 && (
         <Text><strong>Aliases:</strong> {skill.aliases.join(', ')}</Text>
       )}
       <Text><strong>Last Updated:</strong> {new Date(skill.last_updated).toLocaleString()}</Text>

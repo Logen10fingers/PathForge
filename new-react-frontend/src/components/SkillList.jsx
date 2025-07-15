@@ -1,93 +1,161 @@
 // C:\Users\OM BHATT\OneDrive\Desktop\RP1\PathForge\new-react-frontend\src\components\SkillList.jsx
 
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getSkills, deleteSkill } from '../api/api'; // Ensure correct path for API functions
-import { useAuth } from '../hooks/useAuth'; // Import useAuth hook
+import React, { useEffect, useState, useCallback } from "react"; // Add useCallback
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
+import { fetchSkills, deleteSkill } from "../api/api";
 
-const SkillList = () => {
-    const [skills, setSkills] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const navigate = useNavigate();
-    const { isAuthenticated } = useAuth();
+import {
+  Box,
+  Heading,
+  Text,
+  Spinner,
+  Alert,
+  AlertIcon,
+  VStack,
+  SimpleGrid,
+  Card,
+  CardBody,
+  CardFooter,
+  Button,
+  useToast,
+} from "@chakra-ui/react";
 
-    useEffect(() => {
-        if (!isAuthenticated) {
-            navigate('/login'); // Redirect if not authenticated
-            return;
-        }
+export default function SkillList() {
+  const { isAuthenticated, authToken } = useAuth();
+  const navigate = useNavigate();
+  const [skills, setSkills] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const toast = useToast();
 
-        const fetchSkills = async () => {
-            try {
-                setLoading(true);
-                const data = await getSkills();
-                setSkills(data);
-            } catch (err) {
-                console.error("Error fetching skills:", err);
-                setError("Failed to load skills. Please try again.");
-            } finally {
-                setLoading(false);
-            }
-        };
+  // Wrap loadSkills in useCallback
+  const loadSkills = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await fetchSkills();
+      setSkills(data);
+    } catch (err) {
+      console.error("Error fetching skills:", err);
+      setError("Failed to load skills.");
+      toast({
+        title: "Error",
+        description: "Failed to load skills.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]); // Dependencies for loadSkills. `toast` is stable.
 
-        fetchSkills();
-    }, [isAuthenticated, navigate]);
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
 
-    const handleDelete = async (id) => {
-        if (window.confirm('Are you sure you want to delete this skill?')) {
-            try {
-                setLoading(true);
-                await deleteSkill(id);
-                setSkills(skills.filter((skill) => skill.id !== id));
-            } catch (err) {
-                console.error("Error deleting skill:", err);
-                setError("Failed to delete skill.");
-            } finally {
-                setLoading(false);
-            }
-        }
-    };
+    if (isAuthenticated && authToken) {
+      loadSkills();
+    }
+  }, [isAuthenticated, authToken, navigate, loadSkills]); // Add loadSkills to dependency array
 
-    if (loading) return <div>Loading skills...</div>;
-    if (error) return <div style={{ color: 'red' }}>Error: {error}</div>;
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete this skill?")) {
+      try {
+        await deleteSkill(id);
+        toast({
+          title: "Skill Deleted",
+          description: "Skill has been successfully deleted.",
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+        });
+        loadSkills(); // Reload skills after deletion
+      } catch (err) {
+        console.error("Error deleting skill:", err);
+        toast({
+          title: "Error",
+          description: "Failed to delete skill.",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+    }
+  };
 
+  if (loading) {
     return (
-        <div>
-            <h2>Skills List</h2>
-            <button onClick={() => navigate('/skills/create')} style={{ marginBottom: '1rem' }}>
-                Add New Skill
-            </button>
-            {skills.length === 0 ? (
-                <p>No skills found. Click "Add New Skill" to create one.</p>
-            ) : (
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                        <tr>
-                            <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Name</th>
-                            <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Description</th>
-                            <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Category</th>
-                            <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {skills.map((skill) => (
-                            <tr key={skill.id}>
-                                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{skill.name}</td>
-                                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{skill.description}</td>
-                                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{skill.category}</td>
-                                <td style={{ border: '1px solid #ddd', padding: '8px' }}>
-                                    <button onClick={() => navigate(`/skills/${skill.id}`)} style={{ marginRight: '0.5rem' }}>View</button>
-                                    <button onClick={() => navigate(`/skills/edit/${skill.id}`)} style={{ marginRight: '0.5rem' }}>Edit</button>
-                                    <button onClick={() => handleDelete(skill.id)}>Delete</button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            )}
-        </div>
+      <Box textAlign="center" mt={10}>
+        <Spinner size="xl" />
+        <Text mt={4}>Loading skills...</Text>
+      </Box>
     );
-};
+  }
 
-export default SkillList;
+  if (error) {
+    return (
+      <Alert status="error" mt={5}>
+        <AlertIcon />
+        {error}
+      </Alert>
+    );
+  }
+
+  return (
+    <Box p={8} maxW="container.xl" mx="auto" mt={10}>
+      <VStack spacing={8} align="stretch">
+        <Heading as="h2" size="xl" textAlign="center">
+          Skills
+        </Heading>
+        {skills.length === 0 ? (
+          <Text textAlign="center" fontSize="lg">
+            No skills found.
+          </Text>
+        ) : (
+          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
+            {skills.map((skill) => (
+              <Card key={skill.id}>
+                <CardBody>
+                  <Heading size="md">{skill.name}</Heading>
+                  <Text mt={2}>Description: {skill.description}</Text>
+                </CardBody>
+                <CardFooter>
+                  <Button
+                    colorScheme="blue"
+                    onClick={() => navigate(`/skills/${skill.id}`)}
+                    mr={2}
+                  >
+                    View Details
+                  </Button>
+                  <Button
+                    colorScheme="orange"
+                    onClick={() => navigate(`/skills/edit/${skill.id}`)}
+                    mr={2}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    colorScheme="red"
+                    onClick={() => handleDelete(skill.id)}
+                  >
+                    Delete
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+          </SimpleGrid>
+        )}
+        <Button
+          colorScheme="teal"
+          onClick={() => navigate("/skills/new")}
+          mt={4}
+        >
+          Add New Skill
+        </Button>
+      </VStack>
+    </Box>
+  );
+}

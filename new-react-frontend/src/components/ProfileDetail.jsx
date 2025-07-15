@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Box, Heading, Text, Stack, Spinner } from '@chakra-ui/react';
+import { fetchProfileById } from '../api/api';
 
 const ProfileDetail = () => {
   const { id } = useParams();
@@ -11,17 +12,7 @@ const ProfileDetail = () => {
   const [error, setError] = useState(null); // State for error handling
 
   useEffect(() => {
-    // FIX: Explicitly use the Django backend URL
-    const apiUrl = `http://localhost:8000/api/profiles/${id}/`;
-
-    fetch(apiUrl)
-      .then((res) => {
-        if (!res.ok) {
-          // If response is not OK (e.g., 404, 500), throw an error
-          throw new Error(`HTTP error! Status: ${res.status}`);
-        }
-        return res.json();
-      })
+    fetchProfileById(id)
       .then((data) => {
         console.log("Fetched profile:", data); // Check console for the fetched data
         setProfile(data);

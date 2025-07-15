@@ -6,7 +6,7 @@ from .views import ProfileViewSet
 
 router = DefaultRouter()
 router.register(
-    r"", ProfileViewSet
+    r"profiles", ProfileViewSet
 )  # 'profiles' will be the base URL for this viewset
 
 urlpatterns = [

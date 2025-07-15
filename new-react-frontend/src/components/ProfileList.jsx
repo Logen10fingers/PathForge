@@ -1,128 +1,166 @@
 // C:\Users\OM BHATT\OneDrive\Desktop\RP1\PathForge\new-react-frontend\src\components\ProfileList.jsx
 
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth'; // Assuming useAuth is in ../hooks
-import { getProfiles } from '../api/api'; // Import getProfiles from your API file
+import React, { useEffect, useState, useCallback } from "react"; // Add useCallback
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
+import { fetchProfiles, deleteProfile } from "../api/api"; // Ensure deleteProfile is imported if you uncomment its usage
 
-// If you are using Chakra UI, ensure these imports are present.
-// If not, you might need to adjust the JSX below to use standard HTML elements.
 import {
-    Box,
-    Heading,
-    Text,
-    Button,
-    VStack,
-    Spinner,
-    Alert,
-    AlertIcon,
-    SimpleGrid,
-    Card,
-    CardHeader,
-    CardBody,
-    CardFooter,
-    Flex,
-    Spacer
-} from '@chakra-ui/react';
+  Box,
+  Heading,
+  Text,
+  Spinner,
+  Alert,
+  AlertIcon,
+  VStack,
+  SimpleGrid,
+  Card,
+  CardBody,
+  CardFooter,
+  Button,
+  useToast,
+} from "@chakra-ui/react";
 
 export default function ProfileList() {
-    const [profiles, setProfiles] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const navigate = useNavigate();
-    const { isAuthenticated } = useAuth();
+  const { isAuthenticated, authToken } = useAuth();
+  const navigate = useNavigate();
+  const [profiles, setProfiles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const toast = useToast();
 
-    useEffect(() => {
-        if (!isAuthenticated) {
-            navigate('/login'); // Redirect if not authenticated
-            return;
-        }
+  // Wrap loadProfiles in useCallback
+  const loadProfiles = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await fetchProfiles();
+      setProfiles(data);
+    } catch (err) {
+      console.error("Error fetching profiles:", err);
+      setError("Failed to load profiles.");
+      toast({
+        title: "Error",
+        description: "Failed to load profiles.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]); // Dependencies for loadProfiles. `toast` is stable.
 
-        const fetchProfiles = async () => {
-            try {
-                setLoading(true);
-                const data = await getProfiles();
-                setProfiles(data);
-            } catch (err) {
-                console.error("Error fetching profiles:", err);
-                setError("Failed to load profiles. Please try again.");
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchProfiles();
-    }, [isAuthenticated, navigate]);
-
-    const handleViewProfile = (profileId) => {
-        navigate(`/profiles/${profileId}`);
-    };
-
-    const handleEditProfile = (profileId) => {
-        navigate(`/profiles/edit/${profileId}`);
-    };
-
-    const handleCreateProfile = () => {
-        navigate('/profiles/create');
-    };
-
-    if (loading) {
-        return (
-            <Box textAlign="center" mt={10}>
-                <Spinner size="xl" />
-                <Text mt={4}>Loading profiles...</Text>
-            </Box>
-        );
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
     }
 
-    if (error) {
-        return (
-            <Alert status="error" mt={5}>
-                <AlertIcon />
-                {error}
-            </Alert>
-        );
+    if (isAuthenticated && authToken) {
+      loadProfiles();
     }
+  }, [isAuthenticated, authToken, navigate, loadProfiles]); // Add loadProfiles to dependency array
 
+  // ... (rest of the component remains the same)
+  // handleDelete is fine as it doesn't seem to be in a useEffect dependency array itself,
+  // but if you uncomment it, consider wrapping it in useCallback too.
+
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete this profile?")) {
+      try {
+        await deleteProfile(id); // Make sure deleteProfile is exported from api.js
+        toast({
+          title: "Profile Deleted",
+          description: "Profile has been successfully deleted.",
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+        });
+        loadProfiles(); // Reload profiles after deletion
+      } catch (err) {
+        console.error("Error deleting profile:", err);
+        toast({
+          title: "Error",
+          description: "Failed to delete profile.",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+    }
+  };
+
+  if (loading) {
     return (
-        <Box p={8} maxW="container.xl" mx="auto" mt={10}>
-            <Flex mb={6} alignItems="center">
-                <Heading as="h2" size="xl">Profiles</Heading>
-                <Spacer />
-                {isAuthenticated && (
-                    <Button colorScheme="teal" onClick={handleCreateProfile}>
-                        Create New Profile
-                    </Button>
-                )}
-            </Flex>
-
-            {profiles.length === 0 ? (
-                <Text>No profiles found. {isAuthenticated && "Click 'Create New Profile' to add one."}</Text>
-            ) : (
-                <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
-                    {profiles.map((profile) => (
-                        <Card key={profile.id} borderWidth="1px" borderRadius="lg" overflow="hidden" boxShadow="md">
-                            <CardHeader>
-                                <Heading size="md">{profile.name}</Heading>
-                            </CardHeader>
-                            <CardBody>
-                                <Text>{profile.bio}</Text>
-                                {/* Add more profile details if needed */}
-                            </CardBody>
-                            <CardFooter>
-                                <Button size="sm" onClick={() => handleViewProfile(profile.id)}>
-                                    View
-                                </Button>
-                                {/* Only show edit button if authenticated and it's the user's profile, or if there's a more general edit permission */}
-                                {isAuthenticated && ( // You might want more granular checks here
-                                    <Button size="sm" ml={2} onClick={() => handleEditProfile(profile.id)}>
-                                        Edit
-                                    </Button>
-                                )}
-                            </CardFooter>
-                        </Card>
-                    ))}
-                </SimpleGrid>
-            )}
-        </Box>
+      <Box textAlign="center" mt={10}>
+        <Spinner size="xl" />
+        <Text mt={4}>Loading profiles...</Text>
+      </Box>
     );
+  }
+
+  if (error) {
+    return (
+      <Alert status="error" mt={5}>
+        <AlertIcon />
+        {error}
+      </Alert>
+    );
+  }
+
+  return (
+    <Box p={8} maxW="container.xl" mx="auto" mt={10}>
+      <VStack spacing={8} align="stretch">
+        <Heading as="h2" size="xl" textAlign="center">
+          Profiles
+        </Heading>
+        {profiles.length === 0 ? (
+          <Text textAlign="center" fontSize="lg">
+            No profiles found.
+          </Text>
+        ) : (
+          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
+            {profiles.map((profile) => (
+              <Card key={profile.id}>
+                <CardBody>
+                  <Heading size="md">{profile.name}</Heading>
+                  <Text mt={2}>Bio: {profile.bio}</Text>
+                  <Text>Contact: {profile.contact_info}</Text>
+                </CardBody>
+                <CardFooter>
+                  <Button
+                    colorScheme="blue"
+                    onClick={() => navigate(`/profiles/${profile.id}`)}
+                    mr={2}
+                  >
+                    View Details
+                  </Button>
+                  <Button
+                    colorScheme="orange"
+                    onClick={() => navigate(`/profiles/edit/${profile.id}`)}
+                    mr={2}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    colorScheme="red"
+                    onClick={() => handleDelete(profile.id)} // Uncommented for demonstration
+                  >
+                    Delete
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+          </SimpleGrid>
+        )}
+        <Button
+          colorScheme="teal"
+          onClick={() => navigate("/profiles/new")}
+          mt={4}
+        >
+          Add New Profile
+        </Button>
+      </VStack>
+    </Box>
+  );
 }

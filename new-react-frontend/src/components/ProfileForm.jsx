@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
-import { getProfileById, createProfile, updateProfile } from "../api/api";
+// C:\Users\OM BHATT\OneDrive\Desktop\RP1\PathForge\new-react-frontend\src\components\ProfileForm.jsx
+
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
+// Ensure createProfile, updateProfile, and fetchProfileById are imported correctly
+import { createProfile, updateProfile, fetchProfileById } from "../api/api";
 
 import {
   Box,
@@ -10,14 +13,14 @@ import {
   FormLabel,
   Input,
   Textarea,
-  VStack,
   Heading,
+  VStack,
+  useToast,
+  Spinner,
   Alert,
   AlertIcon,
-  Spinner,
   Text,
-  useToast
-} from '@chakra-ui/react';
+} from "@chakra-ui/react";
 
 export default function ProfileForm() {
   const { id } = useParams();
@@ -25,32 +28,37 @@ export default function ProfileForm() {
   const { isAuthenticated } = useAuth();
   const toast = useToast();
 
-  const [profileData, setProfileData] = useState({
-    bio: '',
+  const [formData, setFormData] = useState({
+    name: "",
+    bio: "",
+    contact_info: "",
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isEditMode = !!id;
 
   useEffect(() => {
     if (!isAuthenticated) {
-      navigate('/login');
+      navigate("/login");
       return;
     }
 
-    if (id) {
-      const fetchProfile = async () => {
+    const loadProfile = async () => {
+      if (isEditMode) {
         try {
-          const data = await getProfileById(id);
-          setProfileData({
-            bio: data.bio || '',
+          setLoading(true);
+          const profile = await fetchProfileById(id);
+          setFormData({
+            name: profile.name,
+            bio: profile.bio,
+            contact_info: profile.contact_info,
           });
         } catch (err) {
-          console.error("Error fetching profile:", err);
-          setError("Failed to load profile. Please try again.");
+          console.error("Error fetching profile for edit:", err);
+          setError("Failed to load profile for editing.");
           toast({
             title: "Error",
-            description: "Failed to load profile data.",
+            description: "Failed to load profile.",
             status: "error",
             duration: 5000,
             isClosable: true,
@@ -58,16 +66,17 @@ export default function ProfileForm() {
         } finally {
           setLoading(false);
         }
-      };
-      fetchProfile();
-    } else {
-      setLoading(false);
-    }
-  }, [id, isAuthenticated, navigate, toast]);
+      } else {
+        setLoading(false);
+      }
+    };
+
+    loadProfile();
+  }, [id, isEditMode, isAuthenticated, navigate, toast]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setProfileData(prevData => ({
+    setFormData((prevData) => ({
       ...prevData,
       [name]: value,
     }));
@@ -75,48 +84,41 @@ export default function ProfileForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
+    setLoading(true);
     setError(null);
-
-    if (!isAuthenticated) {
-      setError("You must be logged in to save a profile.");
-      setIsSubmitting(false);
-      return;
-    }
-
     try {
-      if (id) {
-        await updateProfile(id, profileData);
+      if (isEditMode) {
+        await updateProfile(id, formData);
         toast({
-          title: "Profile updated.",
-          description: "Your profile has been successfully updated.",
+          title: "Profile Updated",
+          description: "Profile has been successfully updated.",
           status: "success",
           duration: 3000,
           isClosable: true,
         });
       } else {
-        await createProfile(profileData);
+        await createProfile(formData);
         toast({
-          title: "Profile created.",
-          description: "Your new profile has been successfully created.",
+          title: "Profile Created",
+          description: "New profile has been successfully created.",
           status: "success",
           duration: 3000,
           isClosable: true,
         });
       }
-      navigate('/profiles');
+      navigate("/profiles");
     } catch (err) {
       console.error("Error saving profile:", err);
-      setError(`Failed to save profile: ${err.message || 'Unknown error'}`);
+      setError(`Failed to ${isEditMode ? "update" : "create"} profile.`);
       toast({
-        title: "Error saving profile.",
-        description: err.message || "An unexpected error occurred.",
+        title: "Error",
+        description: `Failed to ${isEditMode ? "update" : "create"} profile.`,
         status: "error",
         duration: 5000,
         isClosable: true,
       });
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
@@ -124,12 +126,12 @@ export default function ProfileForm() {
     return (
       <Box textAlign="center" mt={10}>
         <Spinner size="xl" />
-        <Text mt={4}>Loading profile data...</Text>
+        <Text mt={4}>Loading form...</Text>
       </Box>
     );
   }
 
-  if (error && !isSubmitting) {
+  if (error) {
     return (
       <Alert status="error" mt={5}>
         <AlertIcon />
@@ -139,32 +141,63 @@ export default function ProfileForm() {
   }
 
   return (
-    <Box p={8} maxW="md" mx="auto" mt={10} borderWidth={1} borderRadius="lg" boxShadow="lg">
-      <Heading as="h2" size="xl" mb={6} textAlign="center">
-        {id ? 'Edit Profile' : 'Create New Profile'}
+    <Box
+      p={8}
+      maxW="md"
+      mx="auto"
+      mt={10}
+      borderWidth={1}
+      borderRadius="lg"
+      boxShadow="lg"
+    >
+      <Heading as="h2" size="xl" textAlign="center" mb={6}>
+        {isEditMode ? "Edit Profile" : "Create New Profile"}
       </Heading>
       <form onSubmit={handleSubmit}>
         <VStack spacing={4}>
-          <FormControl id="bio" isRequired>
+          <FormControl id="name" isRequired>
+            <FormLabel>Name</FormLabel>
+            <Input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              placeholder="Enter profile name"
+            />
+          </FormControl>
+          <FormControl id="bio">
             <FormLabel>Bio</FormLabel>
             <Textarea
               name="bio"
-              value={profileData.bio}
+              value={formData.bio}
               onChange={handleChange}
-              placeholder="Tell us about yourself..."
+              placeholder="Enter short bio"
+            />
+          </FormControl>
+          <FormControl id="contact_info">
+            <FormLabel>Contact Info</FormLabel>
+            <Input
+              type="text"
+              name="contact_info"
+              value={formData.contact_info}
+              onChange={handleChange}
+              placeholder="Enter contact details (email, phone, etc.)"
             />
           </FormControl>
           <Button
-            mt={4}
-            colorScheme="teal"
+            colorScheme="blue"
             type="submit"
-            isLoading={isSubmitting}
-            isDisabled={isSubmitting}
+            width="full"
+            mt={4}
+            isLoading={loading}
+          >
+            {isEditMode ? "Update Profile" : "Create Profile"}
+          </Button>
+          <Button
+            colorScheme="gray"
+            onClick={() => navigate("/profiles")}
             width="full"
           >
-            {id ? 'Update Profile' : 'Create Profile'}
-          </Button>
-          <Button mt={2} width="full" onClick={() => navigate('/profiles')}>
             Cancel
           </Button>
         </VStack>
